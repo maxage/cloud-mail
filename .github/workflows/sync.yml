@@ -1,0 +1,45 @@
+name: Sync Upstream Fork
+
+on:
+  schedule:
+    # 自动运行：(这里设置为每6小时一次)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # 允许你从 GitHub 的 "Actions" 标签页手动点击 "Run workflow" 来运行
+
+# 授予 GITHUB_TOKEN 写入内容的权限
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repository
+        uses: actions/checkout@v4
+        # GITHUB_TOKEN 会被自动使用
+
+      - name: Set up Git user
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Sync with upstream
+        run: |
+          # 1. 添加上游仓库
+          git remote add upstream https://github.com/maillab/cloud-mail.git
+          
+          # 2. 拉取上游所有分支和标签
+          git fetch upstream
+          
+          # 3. 切换到你的 main 分支
+          git checkout main
+          
+          # 4. 将你的 main 分支重置为上游的 main 分支
+          # 这会丢弃你（如果有）在自己 fork 上做的任何 commit，
+          # 保持你的 fork 和上游完全一致，这就是你想要的！
+          git rebase upstream/main
+          
+          # 5. 强制推送到你自己的仓库 (origin)
+          # Cloudflare 将会在这里被触发！
+          git push origin main --force
